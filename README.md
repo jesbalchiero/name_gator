@@ -1,4 +1,4 @@
-# combination_words
+# name_gator
 
 ## Project setup
 ```
