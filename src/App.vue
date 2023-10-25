@@ -95,8 +95,17 @@
         <div class="card">
           <div class="card-body">
             <ul class="list-group">
-              <li class="list-group-item" v-for="domain in domains" :key="domain">
-                {{ domain }}
+              <li class="list-group-item" v-for="domain in domains" :key="domain.name">
+                <div class="row">
+                  <div class="col-md">
+                    {{ domain.name }}
+                  </div>
+                  <div class="col-md btn-buy">
+                    <a class="btn btn-primary" :href="domain.checkout" target="_blank">
+                      <span class="fa fa-shopping-cart"></span>
+                    </a>
+                  </div>
+                </div>
               </li>
             </ul>
           </div>
@@ -118,59 +127,74 @@ export default {
 			sufix: "",
 			prefixes: ["Air", "Jet", "Flight"],
 			sufixes: ["Hub", "Station", "Mart"],
-			domains: ["AirHub", "AirStation", "AirMart", "JetHub", "JetStation", "JetMart", "FlightHub", "FlightStation", "FlightMart"],
 		};
 	},
 	methods: {
 		addPrefix(prefix) {
+			if (!prefix.length > 0) {
+				return alert("Add a text to include a Prefix!");
+			}
+      
 			this.prefixes.push(prefix);
 			this.prefix = "";
-			this.generateDomains();
 		},
 		deletePrefix(prefix) {
 			this.prefixes.splice(this.prefixes.indexOf(prefix), 1);
-			this.generateDomains();
 		},
 		addSufix(sufix) {
+			if (!sufix.length > 0) {
+				return alert("Add a text to include a Sufix!");
+			}
+
 			this.sufixes.push(sufix);
 			this.sufix = "";
-			this.generateDomains();
 		},
 		deleteSufix(sufix) {
 			this.sufixes.splice(this.sufixes.indexOf(sufix), 1);
-			this.generateDomains();
 		},
-		generateDomains() {
-			this.domains = [];
+	},
+	computed: {
+		domains() {
+			const domains = [];
 			for (const prefix of this.prefixes) {
 				for (const sufix of this.sufixes) {
-					this.domains.push(prefix + sufix);
+					const name = prefix + sufix;
+					const checkout = `https://registro.br/busca-dominio/?fqdn=${name.toLowerCase()}`;
+          
+					domains.push({
+						name,
+						checkout
+					});
 				}
 			}
+			return domains;
 		},
+	},
+	created() {
+
 	}
 };
 </script>
 
 <style scoped>
-#slogan {
-  margin-top: 30px;
-  margin-bottom: 30px;
-}
+  #slogan {
+    margin-top: 30px;
+    margin-bottom: 30px;
+  }
 
-#main {
-  background-color: #F1F1F1;
-  padding-top: 30px;
-  padding-bottom: 30px;
-}
+  #main {
+    background-color: #F1F1F1;
+    padding-top: 30px;
+    padding-bottom: 30px;
+  }
 
-.title-card {
-  padding: 0px 10px;
-}
+  .title-card {
+    padding: 0px 10px;
+  }
 
-.btn-remove,
-.bg-counter {
-  text-align: end;
-}
-
+  .btn-remove,
+  .bg-counter,
+  .btn-buy {
+    text-align: end;
+  }
 </style>
