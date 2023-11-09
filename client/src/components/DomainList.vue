@@ -4,10 +4,10 @@
             <div class="container">
                 <div class="row">
                     <div class="col-md">
-                    <AppItemList title="Prefixes" :items="prefixes" v-on:addItem="addPrefix" v-on:deleteItem="deletePrefix" />
+                    <AppItemList title="Prefixes" type="prefix" :items="items.prefix" v-on:addItem="addItem" v-on:deleteItem="deleteItem" />
                     </div>
                     <div class="col-md">
-                    <AppItemList title="Sufixes" :items="sufixes" v-on:addItem="addSufix" v-on:deleteItem="deleteSufix"/>
+                    <AppItemList title="Suffixes" type="suffix" :items="items.suffix" v-on:addItem="addItem" v-on:deleteItem="deleteItem"/>
                     </div>
                 </div>
                 <br />
@@ -24,13 +24,22 @@
                     <ul class="list-group">
                         <li class="list-group-item" v-for="domain in domains" :key="domain.name">
                         <div class="row">
-                            <div class="col-md">
-                            {{ domain.name }}
-                            </div>
-                            <div class="col-md btn-buy">
-                            <a class="btn btn-primary" :href="domain.checkout" target="_blank">
-                                <span class="fa fa-shopping-cart"></span>
-                            </a>
+                            <div class="col-md-6">
+								{{ domain.name }}
+							</div>
+							<div class="col-md-3">
+								<span class="badge bg-info">
+									{{ (domain.available) ? "Available" : "Not Available"}}
+								</span>
+							</div>
+                            <div class="col-md-3 btn-buy">
+								<a class="btn btn-primary" :href="domain.checkout" target="_blank">
+									<span class="fa fa-shopping-cart"></span>
+								</a>
+								&emsp;
+								<button class="btn btn-primary" v-on:click="openDomain(domain)">
+									<span class="fa fa-search"></span>
+								</button>
                             </div>
                         </div>
                         </li>
@@ -53,68 +62,118 @@ export default {
 	},
 	data: function () {
 		return {
-			prefix: "",
-			sufix: "",
-			prefixes: [],
-			sufixes: [],
+			items: {
+				prefix: [],
+				suffix: [],
+			},
+			domains: [],
 		};
 	},
 	methods: {
-		addPrefix(prefix) {
-			this.prefixes.push(prefix);
-		},
-		deletePrefix(prefix) {
-			this.prefixes.splice(this.prefixes.indexOf(prefix), 1);
-		},
-		addSufix(sufix) {
-			this.sufixes.push(sufix);
-		},
-		deleteSufix(sufix) {
-			this.sufixes.splice(this.sufixes.indexOf(sufix), 1);
-		},
-	},
-	computed: {
-		domains() {
-			const domains = [];
-			for (const prefix of this.prefixes) {
-				for (const sufix of this.sufixes) {
-					const name = prefix + sufix;
-					const checkout = `https://registro.br/busca-dominio/?fqdn=${name.toLowerCase()}`;
-                
-					domains.push({
-						name,
-						checkout
-					});
+		addItem(item) {
+			axios({
+				url: "http://localhost:4000",
+				method: "post",
+				data: {
+					query: `
+						mutation ($item: ItemInput) {
+							newItem: saveItem(item: $item) {
+								id
+								type
+								description
+							}
+						}
+					`,
+					variables: {
+						item
+					}
 				}
-			}
-			return domains;
+			}).then((response) => {
+				const query = response.data;
+				const newItem = query.data.newItem;
+				this.items[item.type].push(newItem);
+				this.generateDomains();
+			});
 		},
+		deleteItem(item) {
+			axios({
+				url: "http://localhost:4000",
+				method: "post",
+				data: {
+					query: `
+						mutation ($id: Int) {
+							deleted: deleteItem(id: $id)
+						}
+					`,
+					variables: {
+						id: item.id
+					}
+				}
+			}).then(() => {
+				this.items[item.type].splice(this.items[item.type].indexOf(item), 1);
+				this.generateDomains();
+			});
+		},
+		getItems(type) {
+			return axios({
+				url: "http://localhost:4000",
+				method: "post",
+				data: {
+					query: `
+						query ($type: String) {
+							items: items (type: $type) {
+								id
+								type
+								description
+							}
+						}
+					`,
+					variables: {
+						type
+					}
+				}
+			}).then((response) => {
+				const query = response.data;
+				this.items[type] = query.data.items;
+			});
+		},
+		generateDomains() {
+			axios({
+				url: "http://localhost:4000",
+				method: "post",
+				data: {
+					query: `
+						mutation {
+							domains: generateDomains {
+								name
+								checkout
+								available
+							}
+						}
+					`
+				}
+			}).then((response) => {
+				const query = response.data;
+				this.domains = query.data.domains;
+			});
+		},
+		openDomain(domain) {
+			this.$router.push({
+				path: `/domains/${domain.name}`
+			});
+		}
 	},
 	created() {
-		axios({
-			url: "http://localhost:4000",
-			method: "post",
-			data: {
-				query: `
-					{
-						prefixes: items (type: "prefix") {
-							id
-							type
-							description
-						}
-						sufixes: items (type: "sufix") {
-							id
-							type
-							description
-						}
-					}
-				`
-			}
-		}).then(response => {
-			const query = response.data;
-			this.prefixes = query.data.prefixes.map(prefix => prefix.description);
-			this.sufixes = query.data.sufixes.map(sufix => sufix.description);
+		Promise.all([
+			this.getItems("prefix"),
+			this.getItems("suffix")
+		]).then(() => {
+			this.generateDomains();
 		});
 	}
 };
 </script>
+
+<style>
+
+</style>
