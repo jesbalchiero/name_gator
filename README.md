@@ -1,13 +1,19 @@
-# namegator
+# name_gator
 
 ## Project setup
 ```
-npm install
+
+cd client -> npm install
+cd server -> npm install
+
 ```
 
 ### Compiles and hot-reloads for development
 ```
-npm run serve
+
+cd client -> npm run serve
+cd server -> node server
+
 ```
 
 ### Compiles and minifies for production
